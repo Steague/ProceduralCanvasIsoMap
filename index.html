@@ -5,17 +5,6 @@
 		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
 
 		<script type="text/javascript">
-			// var c = document.getElementById("myCanvas");
-			// var ctx = c.getContext("2d");
-			// ctx.fillStyle = '#f00';
-			// ctx.beginPath();
-			// ctx.moveTo(0, 0);
-			// ctx.lineTo(100,50);
-			// ctx.lineTo(50, 100);
-			// ctx.lineTo(0, 90);
-			// ctx.closePath();
-			// ctx.fill();
-
 			String.prototype.hashCode = function() {
 				var hash = 0, i, chr, len;
 				if (this.length == 0) return hash;
@@ -36,34 +25,66 @@
 
 				this.canvas = document.getElementById(canvasId);
 
-				this.map = new Map();
+				this.map = new Map(this);
 			};
 
 			Project.prototype.drawMap = function() {
 				console.log("Func: Project::drawMap");
 
-				console.log(this.map);
-
+				var tile;
 				for (var t in this.map.tiles) {
-					console.log("Tile:", t, this.map.tiles[t]);
+					tile = this.map.tiles[t];
+					this.map.drawTile(tile);
 				}
 			};
 
-			var Map = function () {
+			var Map = function (project) {
 				console.log("Init: Map");
 
-				this.tiles = {};
+				this.project    = project;
+				this.canvas     = project.canvas;
+				this.context    = this.canvas.getContext("2d");
+				this.tiles      = {};
+				this.tileWidth  = 128;
+				this.tileHeight = 64;
+				this.cameraX    = 400;
+				this.cameraY    = 300;
+
+				var self = this;
+				this.canvas.addEventListener('click', function(target) {
+					self.clicked(target.clientX, target.clientY);
+				});
+			};
+
+			Map.prototype.clicked = function(screenX, screenY) {
+				screenX -= this.cameraX;
+				screenY -= this.cameraY;
+				var mapX = Math.floor((screenX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2);
+				var mapY = Math.floor((screenY / (this.tileHeight / 2) - (screenX / (this.tileWidth / 2))) / 2);
+				console.log("Clicked map on tile:", mapX, mapY);
 			};
 
 			Map.prototype.addTile = function(tile) {
 				console.log("Func: Map::addTile");
 
-				var tileKey = (tile.x + ":" + tile.y).hashCode();
-				this.tiles[tileKey] = tile;
+				this.tiles[(tile.x + ":" + tile.y).hashCode()] = tile;
 			};
 
 			Map.prototype.drawTile = function(tile) {
-				console.log("Func: Map::drawTile");
+				console.log("Func: Map::drawTile", tile);
+
+				var screenX = ((tile.x - tile.y) * (this.tileWidth / 2)) + this.cameraX;
+				var screenY = ((tile.x + tile.y) * (this.tileHeight / 2)) + this.cameraY;
+
+				this.context.fillStyle = '#'+Math.floor(Math.random()*16777215).toString(16);;
+				this.context.beginPath();
+				this.context.moveTo(screenX, screenY);
+				this.context.lineTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+				this.context.lineTo(screenX, screenY + this.tileHeight);
+				this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+				this.context.closePath();
+				this.context.fill();
+				this.context.stroke();
 			};
 
 			var Tile = function (x, y, data) {
