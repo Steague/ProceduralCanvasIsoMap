@@ -26,34 +26,115 @@
 				this.canvas = document.getElementById(canvasId);
 
 				this.map = new Map(this);
+				this.heartBeatsPerSec = 60;
+				this.queue = {};
+				this.heart;
+				this.startHeart();
 			};
 
-			Project.prototype.drawMap = function() {
-				console.log("Func: Project::drawMap");
+			Project.prototype.startHeart = function() {
+				var delay = Math.floor(1000 / this.heartBeatsPerSec);
+				var self = this;
+				this.heart = setInterval(function() {
+					self.proccessQueue()
+				}, delay);
+			};
 
-				var tile;
-				for (var t in this.map.tiles) {
-					tile = this.map.tiles[t];
-					this.map.drawTile(tile);
+			Project.prototype.proccessQueue = function() {
+				var callback;
+				for (var i in this.queue) {
+					callback = this.queue[i];
+					delete this.queue[i];
+					if (typeof callback == "function") {
+						callback();
+					}
 				}
 			};
 
-			var Map = function (project) {
+			var Map = function(project) {
 				console.log("Init: Map");
 
-				this.project    = project;
-				this.canvas     = project.canvas;
-				this.context    = this.canvas.getContext("2d");
-				this.tiles      = {};
-				this.tileWidth  = 128;
-				this.tileHeight = 64;
-				this.cameraX    = 400;
-				this.cameraY    = 300;
+				this.project      = project;
+				this.canvas       = project.canvas;
+				this.context      = this.canvas.getContext("2d");
+				this.tiles        = {};
+				this.tileWidth    = 128;
+				this.tileHeight   = 64;
+				this.cameraX      = 400;
+				this.cameraY      = -300;
+				this.dragOffsetX  = 0;
+				this.dragOffsetY  = 0;
+				this.screenWidth  = 800;
+				this.screenHeight = 600;
 
-				var self = this;
-				this.canvas.addEventListener('click', function(target) {
-					self.clicked(target.clientX, target.clientY);
-				});
+				this.addEventListeners();
+			};
+
+			Map.prototype.draw = function() {
+				//console.log("Func: Map::draw", this);
+
+				this.clearCanvas();
+
+				var tile;
+				for (var t in this.tiles) {
+					tile = this.tiles[t];
+					this.drawTile(tile);
+				}
+			};
+
+			Map.prototype.addEventListeners = function() {
+				var self    = this;
+				var flag    = 0;
+				var element = this.canvas;
+				var downX, downY;
+				var clickEvent, mouseDownEvent, mouseMoveEvent, mouseUpEvent, mouseOutEvent;
+
+				mouseDownEvent = element.addEventListener("mousedown", function(target){
+				    flag = 1;
+				    downX = target.clientX;
+				    downY = target.clientY;
+				}, false);
+
+				mouseUpEvent = element.addEventListener("mouseup", function(target){
+					if(flag === 2){
+				        self.dragged();
+				    } else {
+				    	self.clicked(target.clientX, target.clientY);
+				    }
+				  	flag = 0;
+				}, false);
+
+				mouseMoveEvent = element.addEventListener("mousemove", function(target){
+					if (flag === 1) {
+						if (Math.abs(target.clientX - downX) + Math.abs(target.clientY - downY) >= 5) {
+							flag = 2;
+							//console.log("stated dragging now!");
+						}
+					}
+
+					if (flag === 2) {
+						self.dragOffsetX = (target.clientX - downX);
+						self.dragOffsetY = (target.clientY - downY);
+						self.project.queue["drawMap"] = function() {
+							self.draw();
+						};
+					}
+				}, false);
+
+				mouseOutEvent = element.addEventListener("mouseout", function(target){
+					if(flag === 2){
+						self.dragged();
+				    }
+				  	flag = 0;
+				}, false);
+			};
+
+			Map.prototype.dragged = function() {
+		        this.cameraX += this.dragOffsetX;
+		        this.cameraY += this.dragOffsetY;
+
+		        this.dragOffsetX = 0;
+		        this.dragOffsetY = 0;	
 			};
 
 			Map.prototype.clicked = function(screenX, screenY) {
@@ -65,18 +146,29 @@
 			};
 
 			Map.prototype.addTile = function(tile) {
-				console.log("Func: Map::addTile");
+				//console.log("Func: Map::addTile");
 
 				this.tiles[(tile.x + ":" + tile.y).hashCode()] = tile;
 			};
 
+			Map.prototype.clearCanvas = function() {
+				this.context.clearRect(0, 0, this.screenWidth, this.screenHeight);
+			};
+
 			Map.prototype.drawTile = function(tile) {
-				console.log("Func: Map::drawTile", tile);
+				//console.log("Func: Map::drawTile", tile);
 
-				var screenX = ((tile.x - tile.y) * (this.tileWidth / 2)) + this.cameraX;
-				var screenY = ((tile.x + tile.y) * (this.tileHeight / 2)) + this.cameraY;
+				var screenX = ((tile.x - tile.y) * (this.tileWidth / 2)) + this.cameraX + this.dragOffsetX;
+				var screenY = ((tile.x + tile.y) * (this.tileHeight / 2)) + this.cameraY + this.dragOffsetY;
 
-				this.context.fillStyle = '#'+Math.floor(Math.random()*16777215).toString(16);;
+				if (screenX < (0 - (this.tileWidth * 2)) ||
+					screenX >= (this.screenWidth + (this.tileWidth * 2)) ||
+					screenY < (0 - (this.tileHeight * 2)) ||
+					screenY >= (this.screenHeight + (this.tileHeight * 2))) {
+					return;
+				}
+
+				this.context.fillStyle = tile.attr.color; //'#f00'; //#'+Math.floor(Math.random()*16777215).toString(16);;
 				this.context.beginPath();
 				this.context.moveTo(screenX, screenY);
 				this.context.lineTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
@@ -85,6 +177,39 @@
 				this.context.closePath();
 				this.context.fill();
 				this.context.stroke();
+				this.context.font = "8px Arial";
+				this.context.fillStyle = "#000";
+				this.context.textAlign = "center";
+				this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
+			};
+
+			Map.prototype.generateRegion = function(regionX, regionY) {
+				var regionSize = 19;
+
+				// Create Tiles
+				var maxX = regionSize * (regionX + 1);
+				var maxY = regionSize * (regionY + 1);
+
+				for (var i = regionSize * regionX; i < maxX; i++) {
+					for (var j = regionSize * regionY; j < maxY; j++) {
+						this.addTile(new Tile(i,j,{color:'#070'}));
+					}
+				}
+
+				// Seed edge tile with dirt patch
+				var seed = this.tiles[("0:8").hashCode()];
+				console.log("Got me a seed tile", seed);
+
+				seed.set("color", "#994A40");
+				seed.set("trailStart", true);
+
+				// Determine state of edge tiles
+				
+				// Start simple and create dirt trail (Drunkard Walk)
+				// 1 Find trail start
+				// 2 Pick a valid random direction
+				// 3 Make new dirt patch
+				// 4 Repeat 2 and 3 until edge of region
 			};
 
 			var Tile = function (x, y, data) {
@@ -92,22 +217,22 @@
 
 				this.x    = x;
 				this.y    = y;
-				this.data = data;
+				this.attr = data;
+			};
+
+			Tile.prototype.set = function(key, value) {
+				this.attr[key] = value;
+			};
+
+			Tile.prototype.get = function(key) {
+				return this.attr[key];
 			};
 
 			var myProject = new Project("myCanvas");
 
-			myProject.map.addTile(new Tile(0,0,{}));
-			myProject.map.addTile(new Tile(0,1,{}));
-			myProject.map.addTile(new Tile(0,2,{}));
-			myProject.map.addTile(new Tile(1,0,{}));
-			myProject.map.addTile(new Tile(1,1,{}));
-			myProject.map.addTile(new Tile(1,2,{}));
-			myProject.map.addTile(new Tile(2,0,{}));
-			myProject.map.addTile(new Tile(2,1,{}));
-			myProject.map.addTile(new Tile(2,2,{}));
+			myProject.map.generateRegion(0,0);
 
-			myProject.drawMap();
+			myProject.map.draw();
 		</script>
 	</body>
 </html>
