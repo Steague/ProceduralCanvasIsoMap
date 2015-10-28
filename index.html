@@ -192,7 +192,10 @@
 
 				for (var i = regionSize * regionX; i < maxX; i++) {
 					for (var j = regionSize * regionY; j < maxY; j++) {
-						this.addTile(new Tile(i,j,{color:'#070'}));
+						this.addTile(new Tile(i,j,{
+							color : '#070',
+							type  : 'grass'
+						}));
 					}
 				}
 
@@ -200,16 +203,55 @@
 				var seed = this.tiles[("0:8").hashCode()];
 				console.log("Got me a seed tile", seed);
 
-				seed.set("color", "#994A40");
-				seed.set("trailStart", true);
+				seed.set("color", '#994A40');
+				seed.set("type", 'dirt');
 
 				// Determine state of edge tiles
 				
 				// Start simple and create dirt trail (Drunkard Walk)
 				// 1 Find trail start
+				var neighbors = this.findNeighbors(seed);
+				console.log("SEED NEIGHBORS", neighbors);
+				for (var i = 0; i < 500; i++) {
+					var neighbor = this.pickRandomNeighbor(neighbors);
+					neighbors[neighbor].set("color", '#994A40');
+					neighbors[neighbor].set("type", 'dirt');
+					neighbors = this.findNeighbors(neighbors[neighbor]);
+					console.log("NEXT SEED NEIGHBORS", neighbors, neighbor);
+				}
 				// 2 Pick a valid random direction
 				// 3 Make new dirt patch
 				// 4 Repeat 2 and 3 until edge of region
+			};
+
+			Map.prototype.pickRandomNeighbor = function(obj) {
+		    	var result;
+			    var count = 0;
+			    for (var prop in obj) {
+			        if (Math.random() < 1/++count) {
+			           result = prop;
+			        }
+			    }
+			    return result;
+			}
+
+			Map.prototype.findNeighbors = function(tile) {
+				var neighbors = {};
+
+				if (this.tiles[((tile.x-1)+":"+(tile.y)).hashCode()]) {
+					neighbors["NW"] = (this.tiles[((tile.x-1)+":"+(tile.y)).hashCode()]);
+				}
+				if (this.tiles[((tile.x+1)+":"+(tile.y)).hashCode()]) {
+					neighbors["SW"] = (this.tiles[((tile.x+1)+":"+(tile.y)).hashCode()]);
+				}
+				if (this.tiles[((tile.x)+":"+(tile.y-1)).hashCode()]) {
+					neighbors["NE"] = (this.tiles[((tile.x)+":"+(tile.y-1)).hashCode()]);
+				}
+				if (this.tiles[((tile.x)+":"+(tile.y+1)).hashCode()]) {
+					neighbors["SE"] = (this.tiles[((tile.x)+":"+(tile.y+1)).hashCode()]);
+				}
+
+				return neighbors;
 			};
 
 			var Tile = function (x, y, data) {
