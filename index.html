@@ -72,7 +72,7 @@
 			};
 
 			Map.prototype.draw = function() {
-				console.log("Func: Map::draw", Object.getOwnPropertyNames(this.tiles).length);
+				//console.log("Func: Map::draw", Object.getOwnPropertyNames(this.tiles).length);
 
 				if (Object.getOwnPropertyNames(this.tiles).length === 0) {
 					console.log("NEED TO LOAD A REGION");
@@ -123,7 +123,8 @@
 					if (flag === 2) {
 						self.dragOffsetX = (target.clientX - downX);
 						self.dragOffsetY = (target.clientY - downY);
-						self.project.queue["drawMap"] = function() {
+						self.project.queue["mapUpdate"] = function() {
+							self.loadRegions();
 							self.draw();
 						};
 					}
@@ -150,7 +151,7 @@
 				screenY -= this.cameraY;
 				var mapX = Math.floor((screenX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2);
 				var mapY = Math.floor((screenY / (this.tileHeight / 2) - (screenX / (this.tileWidth / 2))) / 2);
-				console.log("Clicked map on tile:", mapX, mapY);
+				//console.log("Clicked map on tile:", mapX, mapY);
 
 				return {
 					x: mapX,
@@ -222,10 +223,27 @@
 				var clickedTileCoords = this.clicked(this.screenWidth/2, this.screenHeight/2);
 				var regionCoords = this.tileCoordsToRegion(clickedTileCoords.x, clickedTileCoords.y);
 
-				console.log("CENTER REGION IS", regionCoords);
+				//console.log("CENTER REGION IS", regionCoords);
 
 				// Generate regions that are not already generated
 
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
+				
 				this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
 				this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
 				this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
@@ -236,9 +254,14 @@
 				this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
 				this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
 
-				// Draw regions that should be shown
-
 				// Unload regions that should be out of the viewport
+			};
+
+			Map.prototype.regionExists = function(x, y) {
+				var tileX = this.regionSize * x;
+				var tileY = this.regionSize * y;
+
+				return this.getTileById(tileX, tileY) || false;
 			};
 
 			Map.prototype.tileCoordsToRegion = function(x, y) {
@@ -251,7 +274,22 @@
 				};
 			};
 
+			Map.prototype.destroyRegion = function(regionX, regionY) {
+				var maxX = this.regionSize * (regionX + 1);
+				var maxY = this.regionSize * (regionY + 1);
+
+				for (var i = this.regionSize * regionX; i < maxX; i++) {
+					for (var j = this.regionSize * regionY; j < maxY; j++) {
+						delete this.tiles[(i+":"+j).hashCode()];
+					}
+				}
+			};
+
 			Map.prototype.generateRegion = function(regionX, regionY) {
+				if (this.regionExists(regionX, regionY)) {
+					return;
+				}
+
 				// Create Tiles
 				var maxX = this.regionSize * (regionX + 1);
 				var maxY = this.regionSize * (regionY + 1);
