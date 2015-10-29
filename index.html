@@ -227,22 +227,22 @@
 
 				// Generate regions that are not already generated
 
-				// this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
-				// this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
-				// this.destroyRegion(regionCoords.x-2, regionCoords.y);
-				// this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
-				// this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
-				// this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
-				// this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
-				// this.destroyRegion(regionCoords.x, regionCoords.y-2);
-				// this.destroyRegion(regionCoords.x, regionCoords.y+2);
-				// this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
-				// this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
-				// this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
-				// this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
-				// this.destroyRegion(regionCoords.x+2, regionCoords.y);
-				// this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
-				// this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
+				this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
+				this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
+				this.destroyRegion(regionCoords.x-2, regionCoords.y);
+				this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
+				this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
+				this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
+				this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
+				this.destroyRegion(regionCoords.x, regionCoords.y-2);
+				this.destroyRegion(regionCoords.x, regionCoords.y+2);
+				this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
+				this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
+				this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
+				this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
+				this.destroyRegion(regionCoords.x+2, regionCoords.y);
+				this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
+				this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
 				
 				this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
 				this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
@@ -253,6 +253,13 @@
 				this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
 				this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
 				this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
+
+				var count = 0;
+				for (var i in this.tiles) {
+					count++;
+				}
+
+				console.log("Tiles in memory",count);
 
 				// Unload regions that should be out of the viewport
 			};
