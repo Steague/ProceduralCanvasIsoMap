@@ -222,27 +222,28 @@
 				// Find the region(s) that should be on the screen
 				var clickedTileCoords = this.clicked(this.screenWidth/2, this.screenHeight/2);
 				var regionCoords = this.tileCoordsToRegion(clickedTileCoords.x, clickedTileCoords.y);
+				var regionQuadrant = this.regionQuadrant(clickedTileCoords.x, clickedTileCoords.y);
 
 				//console.log("CENTER REGION IS", regionCoords);
 
 				// Generate regions that are not already generated
 
-				this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
+				//this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
 				this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
 				this.destroyRegion(regionCoords.x-2, regionCoords.y);
 				this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
-				this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
+				//this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
 				this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
 				this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
 				this.destroyRegion(regionCoords.x, regionCoords.y-2);
 				this.destroyRegion(regionCoords.x, regionCoords.y+2);
 				this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
 				this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
-				this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
+				//this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
 				this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
 				this.destroyRegion(regionCoords.x+2, regionCoords.y);
 				this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
-				this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
+				//this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
 				
 				this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
 				this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
@@ -262,6 +263,10 @@
 				console.log("Tiles in memory",count);
 
 				// Unload regions that should be out of the viewport
+			};
+
+			Map.prototype.regionQuadrant = function(x, y) {
+
 			};
 
 			Map.prototype.regionExists = function(x, y) {
