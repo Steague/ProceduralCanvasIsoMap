@@ -105,7 +105,22 @@
                     downY = target.clientY;
                 }, false);
 
+                element.addEventListener("touchstart", function(target){
+                    flag = 1;
+                    downX = target.clientX;
+                    downY = target.clientY;
+                }, false);
+
                 mouseUpEvent = element.addEventListener("mouseup", function(target){
+                    if(flag === 2){
+                        self.dragged();
+                    } else {
+                        self.clicked(target.clientX, target.clientY);
+                    }
+                    flag = 0;
+                }, false);
+
+                element.addEventListener("touchend", function(target){
                     if(flag === 2){
                         self.dragged();
                     } else {
@@ -132,7 +147,32 @@
                     }
                 }, false);
 
+                element.addEventListener("touchmove", function(target){
+                    if (flag === 1) {
+                        if (Math.abs(target.clientX - downX) + Math.abs(target.clientY - downY) >= 5) {
+                            flag = 2;
+                            //console.log("stated dragging now!");
+                        }
+                    }
+
+                    if (flag === 2) {
+                        self.dragOffsetX = (target.clientX - downX);
+                        self.dragOffsetY = (target.clientY - downY);
+                        self.project.queue["mapUpdate"] = function() {
+                            self.loadRegions();
+                            self.draw();
+                        };
+                    }
+                }, false);
+
                 mouseOutEvent = element.addEventListener("mouseout", function(target){
+                    if(flag === 2){
+                        self.dragged();
+                    }
+                    flag = 0;
+                }, false);
+
+                element.addEventListener("touchcancel", function(target){
                     if(flag === 2){
                         self.dragged();
                     }
