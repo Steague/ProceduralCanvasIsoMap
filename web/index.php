@@ -62,7 +62,7 @@
 				this.tileWidth    = 64 * (1 / this.zoom);
 				this.tileHeight   = this.tileWidth / 2;
 				this.cameraX      = project.canvas.width/2;
-				this.cameraY      = -300;
+				this.cameraY      = 0;
 				this.dragOffsetX  = 0;
 				this.dragOffsetY  = 0;
 				this.screenWidth  = project.canvas.width;
@@ -187,7 +187,7 @@
 				if (screenX < this.tileWidth / 2 ||
 					screenX >= (this.screenWidth - (this.tileWidth / 2)) ||
 					screenY < 0 ||
-					screenY >= (this.screenHeight - this.tileHeight)) {
+					screenY >= (this.screenHeight + tile.attr.image.height)) {
 					return;
 				}
 
@@ -423,7 +423,13 @@
 
 			var myProject = new Project("myCanvas");
 
-			myProject.map.draw();
+
+			var image = new Image();
+			image.src = 'img/trees'+Math.ceil(Math.random()*18)+'.png';
+
+			image.onload = function() {
+				myProject.map.draw();
+			};
 		</script>
 	</body>
 </html>
