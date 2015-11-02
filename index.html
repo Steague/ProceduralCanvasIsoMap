@@ -2,7 +2,7 @@
 	<head>
 	</head>
 	<body>
-		<canvas id="myCanvas" width="1200" height="600" style="border:1px solid #000000;"></canvas>
+		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
 
 		<script type="text/javascript">
 			String.prototype.hashCode = function() {
@@ -58,27 +58,29 @@
 				this.canvas       = project.canvas;
 				this.context      = this.canvas.getContext("2d");
 				this.tiles        = {};
-				this.tileWidth    = 128;
-				this.tileHeight   = 64;
+				this.zoom         = 1;
+				this.tileWidth    = 64 * (1 / this.zoom);
+				this.tileHeight   = this.tileWidth / 2;
 				this.cameraX      = project.canvas.width/2;
 				this.cameraY      = -300;
 				this.dragOffsetX  = 0;
 				this.dragOffsetY  = 0;
 				this.screenWidth  = project.canvas.width;
 				this.screenHeight = project.canvas.height;
-				this.regionSize   = 19;
+				this.regionSize   = 19 * this.zoom;
 
 				this.addEventListeners();
-			};
-
-			Map.prototype.draw = function() {
-				//console.log("Func: Map::draw", Object.getOwnPropertyNames(this.tiles).length);
 
 				if (Object.getOwnPropertyNames(this.tiles).length === 0) {
 					console.log("NEED TO LOAD A REGION");
 					this.loadRegions();
 				}
+			};
 
+
+
+			Map.prototype.draw = function() {
+				//console.log("Func: Map::draw", Object.getOwnPropertyNames(this.tiles).length);
 				this.clearCanvas();
 
 				var tile;
@@ -189,19 +191,36 @@
 					return;
 				}
 
-				this.context.fillStyle = tile.attr.color; //'#f00'; //#'+Math.floor(Math.random()*16777215).toString(16);;
-				this.context.beginPath();
-				this.context.moveTo(screenX, screenY);
-				this.context.lineTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
-				this.context.lineTo(screenX, screenY + this.tileHeight);
-				this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
-				this.context.closePath();
-				this.context.fill();
-				this.context.stroke();
-				this.context.font = "8px Arial";
-				this.context.fillStyle = "#000";
-				this.context.textAlign = "center";
-				this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
+				// this.context.fillStyle = tile.attr.color; //'#f00'; //#'+Math.floor(Math.random()*16777215).toString(16);;
+				// this.context.beginPath();
+				// this.context.moveTo(screenX, screenY);
+				// this.context.lineTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+				// this.context.lineTo(screenX, screenY + this.tileHeight);
+				// this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+				// this.context.closePath();
+				// this.context.fill();
+				// this.context.stroke();
+				// this.context.font = "8px Arial";
+				// this.context.fillStyle = "#000";
+				// this.context.textAlign = "center";
+				// this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
+
+				this.context.drawImage(
+					tile.attr.image,
+					0,
+					0,
+					tile.attr.image.width,
+					tile.attr.image.height,
+					screenX-(tile.attr.image.width / 2),
+					screenY-(tile.attr.image.height - 48),
+					tile.attr.image.width,
+					tile.attr.image.height
+				);
+
+				// this.context.font = "8px Arial";
+				// this.context.fillStyle = "#000";
+				// this.context.textAlign = "center";
+				// this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
 			};
 
 			Map.prototype.drawViewer = function() {
@@ -222,51 +241,60 @@
 				// Find the region(s) that should be on the screen
 				var clickedTileCoords = this.clicked(this.screenWidth/2, this.screenHeight/2);
 				var regionCoords = this.tileCoordsToRegion(clickedTileCoords.x, clickedTileCoords.y);
-				var regionQuadrant = this.regionQuadrant(clickedTileCoords.x, clickedTileCoords.y);
-
-				//console.log("CENTER REGION IS", regionCoords);
 
 				// Generate regions that are not already generated
 
-				//this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
-				this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
-				this.destroyRegion(regionCoords.x-2, regionCoords.y);
-				this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
-				//this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
-				this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
-				this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
-				this.destroyRegion(regionCoords.x, regionCoords.y-2);
-				this.destroyRegion(regionCoords.x, regionCoords.y+2);
-				this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
-				this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
-				//this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
-				this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
-				this.destroyRegion(regionCoords.x+2, regionCoords.y);
-				this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
-				//this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
+				// //this.destroyRegion(regionCoords.x-2, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y-1);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y);
+				// this.destroyRegion(regionCoords.x-2, regionCoords.y+1);
+				// //this.destroyRegion(regionCoords.x-2, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x-1, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x-1, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x, regionCoords.y+2);
+				// this.destroyRegion(regionCoords.x+1, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x+1, regionCoords.y+2);
+				// //this.destroyRegion(regionCoords.x+2, regionCoords.y-2);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y-1);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y);
+				// this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
+				// //this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
 				
-				this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
-				this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
-				this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
-				this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
+				// this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
+				// this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
+				// this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
+				// this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
 				this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-				this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
-				this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
-				this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
-				this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
+				// this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
+				// this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
+				// this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
+				// this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
 
 				var count = 0;
 				for (var i in this.tiles) {
 					count++;
 				}
 
-				console.log("Tiles in memory",count);
+				//console.log("Tiles in memory",count);
+
+				var regionQuadrant = this.regionQuadrant(clickedTileCoords.x, clickedTileCoords.y);
+
+				//console.log("Quadrant IS", regionQuadrant);
 
 				// Unload regions that should be out of the viewport
 			};
 
 			Map.prototype.regionQuadrant = function(x, y) {
+				var region = this.tileCoordsToRegion(x, y);
 
+				// am I in the N/W or E/S?
+				//console.log(x, (this.regionSize * (region.x + 1)) / 2);
+				// if (x <= (this.regionSize * (region.x + 1)) / 2) {
+				// 	console.log("I am in the NW", x, (this.regionSize * (region.x + 1)) / 2);
+				// } else {
+				// 	console.log("I am in the ES", x, (this.regionSize * (region.x + 1)) / 2);
+				// }
 			};
 
 			Map.prototype.regionExists = function(x, y) {
@@ -306,12 +334,19 @@
 				var maxX = this.regionSize * (regionX + 1);
 				var maxY = this.regionSize * (regionY + 1);
 
+				var tile, image;
 				for (var i = this.regionSize * regionX; i < maxX; i++) {
 					for (var j = this.regionSize * regionY; j < maxY; j++) {
-						this.addTile(new Tile(i,j, {
+						image = new Image();
+						image.src = 'img/trees'+Math.ceil(Math.random()*18)+'.png';
+						image.width = '64';
+						image.height = '100';
+						tile = new Tile(i,j, {
 							color : '#070',
-							type  : 'grass'
-						}));
+							type  : 'grass',
+							image : image
+						});
+						this.addTile(tile);
 					}
 				}
 
@@ -387,8 +422,6 @@
 			};
 
 			var myProject = new Project("myCanvas");
-
-			//myProject.map.generateRegion(0,0);
 
 			myProject.map.draw();
 		</script>
