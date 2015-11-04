@@ -57,27 +57,49 @@
                 this.project      = project;
                 this.canvas       = project.canvas;
                 this.context      = this.canvas.getContext("2d");
-                this.tiles        = {};
+                this.tiles        = [];
+                this.tileHash     = {};
                 this.zoom         = 1;
                 this.tileWidth    = 64 * (1 / this.zoom);
                 this.tileHeight   = this.tileWidth / 2;
-                this.cameraX      = project.canvas.width/2;
-                this.cameraY      = 0;
                 this.dragOffsetX  = 0;
                 this.dragOffsetY  = 0;
                 this.screenWidth  = project.canvas.width;
                 this.screenHeight = project.canvas.height;
-                this.regionSize   = 19 * this.zoom;
+                this.regionSize   = 35 * this.zoom;
+                this.cameraX      = project.canvas.width/2;
+                this.cameraY      = ((Math.ceil(this.regionSize / 2) + Math.ceil(this.regionSize / 2)) * (this.tileHeight / 2)) + (project.canvas.height / 2);
 
                 this.addEventListeners();
 
-                if (Object.getOwnPropertyNames(this.tiles).length === 0) {
+                if (this.tiles.length === 0) {
                     console.log("NEED TO LOAD A REGION");
                     this.loadRegions();
                 }
             };
 
+            Map.prototype.setZoom = function(zoom) {
+                this.zoom       = zoom;
+                this.tileWidth  = 64 * (1 / this.zoom);
+                this.tileHeight = this.tileWidth / 2;
+                this.regionSize = 35 * this.zoom;
 
+                this.draw();
+            };
+
+            Map.prototype.sortMap = function (a, b) {
+                if (a.x > b.x){
+                    return 1;
+                } else if (a.x < b.x) {
+                    return -1;
+                } else {
+                    if (a.y > b.y) {
+                        return 1;
+                    } else {
+                        return -1;
+                    }
+                }
+            };
 
             Map.prototype.draw = function() {
                 //console.log("Func: Map::draw", Object.getOwnPropertyNames(this.tiles).length);
@@ -86,6 +108,7 @@
                 var tile;
                 for (var t in this.tiles) {
                     tile = this.tiles[t];
+                    this.updateTileHash(tile.x, tile.y, t);
                     this.drawTile(tile);
                 }
 
@@ -105,22 +128,7 @@
                     downY = target.clientY;
                 }, false);
 
-                element.addEventListener("touchstart", function(target){
-                    flag = 1;
-                    downX = target.clientX;
-                    downY = target.clientY;
-                }, false);
-
                 mouseUpEvent = element.addEventListener("mouseup", function(target){
-                    if(flag === 2){
-                        self.dragged();
-                    } else {
-                        self.clicked(target.clientX, target.clientY);
-                    }
-                    flag = 0;
-                }, false);
-
-                element.addEventListener("touchend", function(target){
                     if(flag === 2){
                         self.dragged();
                     } else {
@@ -147,32 +155,7 @@
                     }
                 }, false);
 
-                element.addEventListener("touchmove", function(target){
-                    if (flag === 1) {
-                        if (Math.abs(target.clientX - downX) + Math.abs(target.clientY - downY) >= 5) {
-                            flag = 2;
-                            //console.log("stated dragging now!");
-                        }
-                    }
-
-                    if (flag === 2) {
-                        self.dragOffsetX = (target.clientX - downX);
-                        self.dragOffsetY = (target.clientY - downY);
-                        self.project.queue["mapUpdate"] = function() {
-                            self.loadRegions();
-                            self.draw();
-                        };
-                    }
-                }, false);
-
                 mouseOutEvent = element.addEventListener("mouseout", function(target){
-                    if(flag === 2){
-                        self.dragged();
-                    }
-                    flag = 0;
-                }, false);
-
-                element.addEventListener("touchcancel", function(target){
                     if(flag === 2){
                         self.dragged();
                     }
@@ -204,7 +187,8 @@
             Map.prototype.addTile = function(tile) {
                 //console.log("Func: Map::addTile");
 
-                this.tiles[(tile.x + ":" + tile.y).hashCode()] = tile;
+                this.tiles.push(tile);
+                this.tileHash[(tile.x+":"+tile.y).hashCode()] = (this.tiles.length - 1);
             };
 
             Map.prototype.clearCanvas = function() {
@@ -217,33 +201,19 @@
                 var screenX = ((tile.x - tile.y) * (this.tileWidth / 2)) + this.cameraX + this.dragOffsetX;
                 var screenY = ((tile.x + tile.y) * (this.tileHeight / 2)) + this.cameraY + this.dragOffsetY;
 
-                if (screenX < (0 - (this.tileWidth * 2)) ||
-                    screenX >= (this.screenWidth + (this.tileWidth * 2)) ||
-                    screenY < (0 - (this.tileHeight * 2)) ||
-                    screenY >= (this.screenHeight + (this.tileHeight * 2))) {
+                if (screenX < (0 - (this.tileWidth * this.zoom) + (this.tileWidth / 2)) ||
+                    screenX >= (this.screenWidth + ((this.tileWidth * (1 / this.zoom)) / 2)) ||
+                    screenY < (0 - (this.tileHeight * this.zoom) - (this.tileHeight)) ||
+                    screenY >= this.screenHeight + ((this.tileHeight * this.zoom) + (tile.attr.image.height * (1 / this.zoom)))) {
                     return;
                 }
 
-                if (screenX < this.tileWidth / 2 ||
-                    screenX >= (this.screenWidth - (this.tileWidth / 2)) ||
-                    screenY < 0 ||
-                    screenY >= (this.screenHeight + tile.attr.image.height)) {
+                if (screenX < (0 + (this.tileWidth * this.zoom) - (this.tileWidth / 2)) ||
+                    screenX >= (this.screenWidth - ((this.tileWidth * (1 / this.zoom)) / 2)) ||
+                    screenY < (0 + (this.tileHeight * this.zoom) - (this.tileHeight)) ||
+                    screenY >= this.screenHeight - ((this.tileHeight * this.zoom) - (tile.attr.image.height * (1 / this.zoom)))) {
                     return;
                 }
-
-                // this.context.fillStyle = tile.attr.color; //'#f00'; //#'+Math.floor(Math.random()*16777215).toString(16);;
-                // this.context.beginPath();
-                // this.context.moveTo(screenX, screenY);
-                // this.context.lineTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
-                // this.context.lineTo(screenX, screenY + this.tileHeight);
-                // this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
-                // this.context.closePath();
-                // this.context.fill();
-                // this.context.stroke();
-                // this.context.font = "8px Arial";
-                // this.context.fillStyle = "#000";
-                // this.context.textAlign = "center";
-                // this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
 
                 this.context.drawImage(
                     tile.attr.image,
@@ -253,8 +223,8 @@
                     tile.attr.image.height,
                     screenX-(tile.attr.image.width / 2),
                     screenY-(tile.attr.image.height - 48),
-                    tile.attr.image.width,
-                    tile.attr.image.height
+                    tile.attr.image.width * (1 / this.zoom),
+                    tile.attr.image.height * (1 / this.zoom)
                 );
 
                 // this.context.font = "8px Arial";
@@ -265,16 +235,26 @@
 
             Map.prototype.drawViewer = function() {
                 this.context.beginPath();
-                this.context.moveTo(this.tileWidth, this.tileHeight);
-                this.context.lineTo(this.screenWidth-this.tileWidth, this.tileHeight);
-                this.context.lineTo(this.screenWidth-this.tileWidth, this.screenHeight-this.tileHeight);
-                this.context.lineTo(this.tileWidth, this.screenHeight-this.tileHeight);
+                this.context.moveTo(this.tileWidth * this.zoom, this.tileHeight * this.zoom);
+                this.context.lineTo(this.screenWidth-(this.tileWidth * this.zoom), this.tileHeight * this.zoom);
+                this.context.lineTo(this.screenWidth-(this.tileWidth * this.zoom), this.screenHeight-(this.tileHeight * this.zoom));
+                this.context.lineTo(this.tileWidth * this.zoom, this.screenHeight-(this.tileHeight * this.zoom));
                 this.context.closePath();
                 this.context.stroke();
             };
 
+            Map.prototype.updateTileHash = function(x, y, tileIndex) {
+                return this.tileHash[(x+":"+y).hashCode()] = tileIndex;
+            }
+
             Map.prototype.getTileById = function(x, y) {
-                return this.tiles[(x+":"+y).hashCode()] || null;
+                if (!this.tileHash.hasOwnProperty((x+":"+y).hashCode())) {
+                    return null;
+                }
+
+                var tileIndex = this.tileHash[(x+":"+y).hashCode()];
+                
+                return this.tiles[tileIndex] || null;
             };
 
             Map.prototype.loadRegions = function() {
@@ -301,15 +281,17 @@
                 // this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
                 // //this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
                 
-                // this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
-                // this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
-                // this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
-                // this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
+                this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
+                this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
+                this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
+                this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
                 this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-                // this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
-                // this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
-                // this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
-                // this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
+                this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
+                this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
+                this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
+                this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
+
+                this.tiles = this.tiles.sort(this.sortMap);
 
                 var count = 0;
                 for (var i in this.tiles) {
@@ -341,7 +323,7 @@
                 var tileX = this.regionSize * x;
                 var tileY = this.regionSize * y;
 
-                return this.getTileById(tileX, tileY) || false;
+                return (this.getTileById(tileX, tileY) !== null ? true : false);
             };
 
             Map.prototype.tileCoordsToRegion = function(x, y) {
@@ -357,20 +339,15 @@
             Map.prototype.destroyRegion = function(regionX, regionY) {
                 var maxX = this.regionSize * (regionX + 1);
                 var maxY = this.regionSize * (regionY + 1);
-
-                for (var i = this.regionSize * regionX; i < maxX; i++) {
-                    for (var j = this.regionSize * regionY; j < maxY; j++) {
-                        delete this.tiles[(i+":"+j).hashCode()];
-                    }
-                }
+                // TODO: figure this bit out
             };
 
             Map.prototype.generateRegion = function(regionX, regionY) {
-                if (this.regionExists(regionX, regionY)) {
+                var regionExists = this.regionExists(regionX, regionY);
+                if (regionExists !== false) {
                     return;
                 }
 
-                // Create Tiles
                 var maxX = this.regionSize * (regionX + 1);
                 var maxY = this.regionSize * (regionY + 1);
 
@@ -383,36 +360,12 @@
                         image.height = '100';
                         tile = new Tile(i,j, {
                             color : '#070',
-                            type  : 'grass',
+                            type  : 'trees',
                             image : image
                         });
                         this.addTile(tile);
                     }
                 }
-
-                // // Seed edge tile with dirt patch
-                // var seed = this.tiles[("0:8").hashCode()];
-                // console.log("Got me a seed tile", seed);
-
-                // seed.set("color", '#994A40');
-                // seed.set("type", 'dirt');
-
-                // // Determine state of edge tiles
-                
-                // // Start simple and create dirt trail (Drunkard Walk)
-                // // 1 Find trail start
-                // var neighbors = this.findNeighbors(seed);
-                // //console.log("SEED NEIGHBORS", neighbors);
-                // for (var i = 0; i < 500; i++) {
-                //  var neighbor = this.pickRandomNeighbor(neighbors);
-                //  neighbors[neighbor].set("color", '#994A40');
-                //  neighbors[neighbor].set("type", 'dirt');
-                //  neighbors = this.findNeighbors(neighbors[neighbor]);
-                //  //console.log("NEXT SEED NEIGHBORS", neighbors, neighbor);
-                // }
-                // // 2 Pick a valid random direction
-                // // 3 Make new dirt patch
-                // // 4 Repeat 2 and 3 until edge of region
             };
 
             Map.prototype.pickRandomNeighbor = function(obj) {
