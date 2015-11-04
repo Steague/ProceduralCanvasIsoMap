@@ -5,17 +5,6 @@
         <canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
 
         <script type="text/javascript">
-            String.prototype.hashCode = function() {
-                var hash = 0, i, chr, len;
-                if (this.length == 0) return hash;
-                for (i = 0, len = this.length; i < len; i++) {
-                    chr   = this.charCodeAt(i);
-                    hash  = ((hash << 5) - hash) + chr;
-                    hash |= 0; // Convert to 32bit integer
-                }
-                return hash;
-            };
-
             var Project = function(canvasId) {
                 console.log("Init: Project", canvasId);
 
@@ -44,11 +33,11 @@
                 var callback;
                 for (var i in this.queue) {
                     callback = this.queue[i];
-                    delete this.queue[i];
                     if (typeof callback == "function") {
                         callback();
                     }
                 }
+                this.queue = {};
             };
 
             var Map = function(project) {
@@ -73,8 +62,8 @@
                 this.addEventListeners();
 
                 if (this.tiles.length === 0) {
-                    console.log("NEED TO LOAD A REGION");
                     this.loadRegions();
+                    this.createStartZone();
                 }
             };
 
@@ -112,7 +101,7 @@
                     this.drawTile(tile);
                 }
 
-                this.drawViewer();
+                //this.drawViewer();
             };
 
             Map.prototype.addEventListeners = function() {
@@ -188,7 +177,7 @@
                 //console.log("Func: Map::addTile");
 
                 this.tiles.push(tile);
-                this.tileHash[(tile.x+":"+tile.y).hashCode()] = (this.tiles.length - 1);
+                this.tileHash[tile.x+":"+tile.y] = (this.tiles.length - 1);
             };
 
             Map.prototype.clearCanvas = function() {
@@ -208,12 +197,12 @@
                     return;
                 }
 
-                if (screenX < (0 + (this.tileWidth * this.zoom) - (this.tileWidth / 2)) ||
-                    screenX >= (this.screenWidth - ((this.tileWidth * (1 / this.zoom)) / 2)) ||
-                    screenY < (0 + (this.tileHeight * this.zoom) - (this.tileHeight)) ||
-                    screenY >= this.screenHeight - ((this.tileHeight * this.zoom) - (tile.attr.image.height * (1 / this.zoom)))) {
-                    return;
-                }
+                // if (screenX < (0 + (this.tileWidth * this.zoom) - (this.tileWidth / 2)) ||
+                //     screenX >= (this.screenWidth - ((this.tileWidth * (1 / this.zoom)) / 2)) ||
+                //     screenY < (0 + (this.tileHeight * this.zoom) - (this.tileHeight)) ||
+                //     screenY >= this.screenHeight - ((this.tileHeight * this.zoom) - (tile.attr.image.height * (1 / this.zoom)))) {
+                //     return;
+                // }
 
                 this.context.drawImage(
                     tile.attr.image,
@@ -244,17 +233,48 @@
             };
 
             Map.prototype.updateTileHash = function(x, y, tileIndex) {
-                return this.tileHash[(x+":"+y).hashCode()] = tileIndex;
+                return this.tileHash[x+":"+y] = tileIndex;
             }
 
             Map.prototype.getTileById = function(x, y) {
-                if (!this.tileHash.hasOwnProperty((x+":"+y).hashCode())) {
+                var tile;
+                for (var t in this.tiles) {
+                    tile = this.tiles[t];
+                    if (tile.x == x &&
+                        tile.y == y) {
+                        return tile;
+                    }
+                }
+
+                return null;
+
+                if (!this.tileHash.hasOwnProperty(x+":"+y)) {
                     return null;
                 }
 
-                var tileIndex = this.tileHash[(x+":"+y).hashCode()];
+                var tileIndex = this.tileHash[x+":"+y];
                 
                 return this.tiles[tileIndex] || null;
+            };
+
+            Map.prototype.createStartZone = function() {
+                var startZoneCoords = [];
+                var tile, image;
+                for (var i = 0; i <= 5; i++) {
+                    for (var j = 0; j <= 5; j++) {
+                        tile = this.tileHash[(i-20)+":"+(j-20)];
+                        image = new Image();
+                        image.src = 'img/basic1.png';
+                        if (i == 2 && j == 2) {
+                            image.src = "img/house1.png";
+                        } else if (i > 2 && j == 2) {
+                            image.src = "img/path_ew.png";
+                        }
+                        image.width = '64';
+                        image.height = '100';
+                        this.tiles[tile].set("image", image);
+                    }
+                }
             };
 
             Map.prototype.loadRegions = function() {
@@ -281,15 +301,15 @@
                 // this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
                 // //this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
                 
-                this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
-                this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
-                this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
-                this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
+                // this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
+                // this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
+                // this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
+                // this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
                 this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-                this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
-                this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
-                this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
-                this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
+                // this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
+                // this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
+                // this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
+                // this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
 
                 this.tiles = this.tiles.sort(this.sortMap);
 
@@ -434,6 +454,8 @@
             for (var i = 1; i <= 18; i++) {
                 imageSrcs.push('img/trees'+i+'.png');
             };
+            imageSrcs.push('img/house1.png');
+            imageSrcs.push('img/path_ew.png');
 
             var myProject = new Project("myCanvas");
             preloadImages(imageSrcs, function() {
