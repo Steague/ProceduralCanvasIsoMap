@@ -48,7 +48,7 @@
                 this.context      = this.canvas.getContext("2d");
                 this.tiles        = [];
                 this.tileHash     = {};
-                this.zoom         = 1;
+                this.zoom         = 2;
                 this.tileWidth    = 64 * (1 / this.zoom);
                 this.tileHeight   = this.tileWidth / 2;
                 this.dragOffsetX  = 0;
@@ -56,22 +56,48 @@
                 this.screenWidth  = project.canvas.width;
                 this.screenHeight = project.canvas.height;
                 this.regionSize   = 35 * this.zoom;
-                this.cameraX      = project.canvas.width/2;
-                this.cameraY      = ((Math.ceil(this.regionSize / 2) + Math.ceil(this.regionSize / 2)) * (this.tileHeight / 2)) + (project.canvas.height / 2);
+                this.cameraX      = (this.screenWidth/2) + (this.tileWidth / 2);
+                this.cameraY      = (this.screenHeight/2) + (this.tileHeight / 2);
+                this.zooming      = false;
 
                 this.addEventListeners();
 
                 if (this.tiles.length === 0) {
-                    this.loadRegions();
+                    console.log(this);
+                    this.loadRegions(0, 0);
                     this.createStartZone();
                 }
             };
+ 
+            Map.prototype.zoomOut = function(end, centerX, centerY) {
+                if (this.zoom < end) {
+                    this.setZoom(this.zoom + 0.05, centerX, centerY);
+                    self = this;
+                    requestAnimationFrame(function() { self.zoomOut(end, centerX, centerY); });
+                } else {
+                    this.zooming = false;
+                }
+            };
+ 
+            Map.prototype.zoomIn = function(end, centerX, centerY) {
+                if (this.zoom > end) {
+                    this.setZoom(this.zoom - 0.05, centerX, centerY);
+                    self = this;
+                    requestAnimationFrame(function() { self.zoomIn(end, centerX, centerY); });
+                } else {
+                    this.zooming = false;
+                }
+            };
 
-            Map.prototype.setZoom = function(zoom) {
+            Map.prototype.setZoom = function(zoom, centerX, centerY) {
                 this.zoom       = zoom;
                 this.tileWidth  = 64 * (1 / this.zoom);
                 this.tileHeight = this.tileWidth / 2;
-                this.regionSize = 35 * this.zoom;
+                this.regionSize = Math.ceil(35 * this.zoom);
+                this.cameraX    = (this.screenWidth/2) + (this.tileWidth / 2);
+                this.cameraY    = (this.screenHeight/2) + (this.tileHeight / 2);
+
+                console.log(this.cameraY, centerY);
 
                 this.draw();
             };
@@ -102,6 +128,7 @@
                 }
 
                 //this.drawViewer();
+                this.drawCrosshair();
             };
 
             Map.prototype.addEventListeners = function() {
@@ -109,7 +136,22 @@
                 var flag    = 0;
                 var element = this.canvas;
                 var downX, downY;
-                var clickEvent, mouseDownEvent, mouseMoveEvent, mouseUpEvent, mouseOutEvent;
+                var clickEvent, mouseDownEvent, mouseMoveEvent, mouseUpEvent, mouseOutEvent, mouseWheelEvent;
+
+                mouseWheelEvent = element.addEventListener("wheel", function(target) {
+                    //console.log(target);
+                    if (self.zooming == true) {
+                        return;
+                    }
+
+                    if (target.wheelDelta < -2) {
+                        self.zooming = true;
+                        self.zoomOut(Math.min(self.zoom + 0.1, 2), target.x, target.y);
+                    } else if (target.wheelDelta > 2) {
+                        self.zooming = true;
+                        self.zoomIn(Math.max(self.zoom - 0.1, 1), target.x, target.y);
+                    }
+                }, false);
 
                 mouseDownEvent = element.addEventListener("mousedown", function(target){
                     flag = 1;
@@ -175,7 +217,9 @@
 
             Map.prototype.addTile = function(tile) {
                 //console.log("Func: Map::addTile");
-
+                if (this.getTileById(tile.x, tile.y) !== null) {
+                    return;
+                }
                 this.tiles.push(tile);
                 this.tileHash[tile.x+":"+tile.y] = (this.tiles.length - 1);
             };
@@ -191,7 +235,7 @@
                 var screenY = ((tile.x + tile.y) * (this.tileHeight / 2)) + this.cameraY + this.dragOffsetY;
 
                 if (screenX < (0 - (this.tileWidth * this.zoom) + (this.tileWidth / 2)) ||
-                    screenX >= (this.screenWidth + ((this.tileWidth * (1 / this.zoom)) / 2)) ||
+                    screenX >= (this.screenWidth + ((this.tileWidth * 2) * (1 / this.zoom))) ||
                     screenY < (0 - (this.tileHeight * this.zoom) - (this.tileHeight)) ||
                     screenY >= this.screenHeight + ((this.tileHeight * this.zoom) + (tile.attr.image.height * (1 / this.zoom)))) {
                     return;
@@ -222,6 +266,20 @@
                 // this.context.fillText("("+tile.x+","+tile.y+")", screenX, screenY+10);
             };
 
+             Map.prototype.drawCrosshair = function() {
+                this.context.beginPath();
+                this.context.moveTo(this.screenWidth / 2, 0);
+                this.context.lineTo(this.screenWidth / 2, this.screenHeight);
+                this.context.closePath();
+                this.context.stroke();
+
+                this.context.beginPath();
+                this.context.moveTo(0, this.screenHeight / 2);
+                this.context.lineTo(this.screenWidth, this.screenHeight / 2);
+                this.context.closePath();
+                this.context.stroke();
+             };
+
             Map.prototype.drawViewer = function() {
                 this.context.beginPath();
                 this.context.moveTo(this.tileWidth * this.zoom, this.tileHeight * this.zoom);
@@ -237,16 +295,16 @@
             }
 
             Map.prototype.getTileById = function(x, y) {
-                var tile;
-                for (var t in this.tiles) {
-                    tile = this.tiles[t];
-                    if (tile.x == x &&
-                        tile.y == y) {
-                        return tile;
-                    }
-                }
+                // var tile;
+                // for (var t in this.tiles) {
+                //     tile = this.tiles[t];
+                //     if (tile.x == x &&
+                //         tile.y == y) {
+                //         return tile;
+                //     }
+                // }
 
-                return null;
+                // return null;
 
                 if (!this.tileHash.hasOwnProperty(x+":"+y)) {
                     return null;
@@ -262,7 +320,7 @@
                 var tile, image;
                 for (var i = 0; i <= 5; i++) {
                     for (var j = 0; j <= 5; j++) {
-                        tile = this.tileHash[(i-20)+":"+(j-20)];
+                        tile = this.tileHash[(i+5)+":"+(j+5)];
                         image = new Image();
                         image.src = 'img/basic1.png';
                         if (i == 2 && j == 2) {
@@ -277,10 +335,10 @@
                 }
             };
 
-            Map.prototype.loadRegions = function() {
+            Map.prototype.loadRegions = function(defaultX, defaultY) {
                 // Find the region(s) that should be on the screen
                 var clickedTileCoords = this.clicked(this.screenWidth/2, this.screenHeight/2);
-                var regionCoords = this.tileCoordsToRegion(clickedTileCoords.x, clickedTileCoords.y);
+                var regionCoords = (defaultX !== undefined && defaultY !== undefined ? { x: defaultX, y: defaultY } : this.tileCoordsToRegion(clickedTileCoords.x, clickedTileCoords.y));
 
                 // Generate regions that are not already generated
 
