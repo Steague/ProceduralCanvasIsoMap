@@ -22,6 +22,12 @@
             };
 
             Project.prototype.startHeart = function() {
+                if (typeof requestAnimationFrame == "function") {
+                    console.log("requestAnimationFrame supported.");
+                    this.proccessQueue();
+                    return;
+                }
+
                 var delay = Math.floor(1000 / this.heartBeatsPerSec);
                 var self = this;
                 this.heart = setInterval(function() {
@@ -38,6 +44,13 @@
                     }
                 }
                 this.queue = {};
+
+                if (typeof requestAnimationFrame == "function") {
+                    var self = this;
+                    requestAnimationFrame(function() {
+                        self.proccessQueue();
+                    });
+                }
             };
 
             var Map = function(project) {
@@ -58,7 +71,6 @@
                 this.regionSize   = 35 * this.zoom;
                 this.cameraX      = (this.screenWidth/2) + (this.tileWidth / 2);
                 this.cameraY      = (this.screenHeight/2) + (this.tileHeight / 2);
-                this.zooming      = false;
 
                 this.addEventListeners();
 
@@ -72,20 +84,20 @@
             Map.prototype.zoomOut = function(end, centerX, centerY) {
                 if (this.zoom < end) {
                     this.setZoom(this.zoom + 0.05, centerX, centerY);
-                    self = this;
-                    requestAnimationFrame(function() { self.zoomOut(end, centerX, centerY); });
-                } else {
-                    this.zooming = false;
+                    var self = this;
+                    this.project.queue["zoomUpdate"] = function() {
+                        self.zoomOut(end, centerX, centerY);
+                    };
                 }
             };
  
             Map.prototype.zoomIn = function(end, centerX, centerY) {
                 if (this.zoom > end) {
                     this.setZoom(this.zoom - 0.05, centerX, centerY);
-                    self = this;
-                    requestAnimationFrame(function() { self.zoomIn(end, centerX, centerY); });
-                } else {
-                    this.zooming = false;
+                    var self = this;
+                    this.project.queue["zoomUpdate"] = function() {
+                        self.zoomIn(end, centerX, centerY);
+                    };
                 }
             };
 
@@ -139,16 +151,9 @@
                 var clickEvent, mouseDownEvent, mouseMoveEvent, mouseUpEvent, mouseOutEvent, mouseWheelEvent;
 
                 mouseWheelEvent = element.addEventListener("wheel", function(target) {
-                    //console.log(target);
-                    if (self.zooming == true) {
-                        return;
-                    }
-
                     if (target.wheelDelta < -2) {
-                        self.zooming = true;
                         self.zoomOut(Math.min(self.zoom + 0.1, 2), target.x, target.y);
                     } else if (target.wheelDelta > 2) {
-                        self.zooming = true;
                         self.zoomIn(Math.max(self.zoom - 0.1, 1), target.x, target.y);
                     }
                 }, false);
