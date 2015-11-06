@@ -70,7 +70,8 @@
                 this.screenHeight = project.canvas.height;
                 this.regionSize   = 35 * this.zoom;
                 this.cameraX      = (this.screenWidth/2);// + (this.tileWidth / 2);
-                this.cameraY      = (this.screenHeight/2) - (this.tileHeight * 7.5);
+                this.cameraY      = (this.screenHeight/2);// - (this.tileHeight * 7.5);
+                //this.startCameraY = this.cameraY;
 
                 this.addEventListeners();
 
@@ -83,7 +84,7 @@
  
             Map.prototype.zoomOut = function(end, centerX, centerY) {
                 if (this.zoom < end) {
-                    this.setZoom(this.zoom + 0.05, centerX, centerY);
+                    this.setZoom(this.zoom + 0.1, centerX, centerY);
                     var self = this;
                     this.project.queue["zoomUpdate"] = function() {
                         self.zoomOut(end, centerX, centerY);
@@ -93,7 +94,7 @@
  
             Map.prototype.zoomIn = function(end, centerX, centerY) {
                 if (this.zoom > end) {
-                    this.setZoom(this.zoom - 0.05, centerX, centerY);
+                    this.setZoom(this.zoom - 0.1, centerX, centerY);
                     var self = this;
                     this.project.queue["zoomUpdate"] = function() {
                         self.zoomIn(end, centerX, centerY);
@@ -107,9 +108,26 @@
                 this.tileHeight = this.tileWidth / 2;
                 this.regionSize = Math.ceil(35 * this.zoom);
                 //this.cameraX    = (this.screenWidth/2) + ((this.tileWidth / 2) / this.zoom );
-                //this.cameraY    = (this.screenHeight/2) - (this.tileHeight / 2);
+                //this.cameraY    = this.cameraY + (this.zoom / 2);
 
-                console.log(this.zoom, this.cameraY, centerY);
+                this.cameraY = (this.cameraY - (this.screenHeight/2)) + this.cameraY;
+
+                //this.cameraY = this.startCameraY * (Math.pow(1.11,Math.round((this.zoom - 1) * 10)));
+                //this.cameraY = this.cameraY * (Math.pow(1.1,Math.round((this.zoom - 1) * 10)));
+
+                // var baseY = Math.max(this.cameraY, Math.round(this.cameraY / (Math.pow(1.1,Math.round((this.zoom - 1) * 10)))));
+
+                // console.log(baseY, this.cameraY);
+
+                // this.cameraY = baseY * (Math.pow(1.1,Math.round((this.zoom - 1) * 10)));
+
+                var startY = 60;
+
+                //this.cameraY = startY + (Math.round((this.zoom - 1) * 10) * 12);
+
+                //this.cameraY = 300 - ((300 - startY) / (Math.pow(1.1,Math.round((this.zoom - 1) * 10))));
+
+                //console.log(this.cameraX, this.cameraY, baseY);//, 300 - ((300 - startY) / (Math.pow(1.1,Math.round((this.zoom - 1) * 10)))));// (Math.pow(1.1,Math.round((this.zoom - 1) * 10))));//, this.startCameraY * (Math.pow(1.1,Math.round((this.zoom - 1) * 20))));//centerY);
 
                 this.draw();
             };
