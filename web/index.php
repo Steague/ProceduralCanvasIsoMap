@@ -61,7 +61,7 @@
                 this.context      = this.canvas.getContext("2d");
                 this.tiles        = [];
                 this.tileHash     = {};
-                this.zoom         = 2;
+                this.zoom         = 1;
                 this.tileWidth    = 64 * (1 / this.zoom);
                 this.tileHeight   = this.tileWidth / 2;
                 this.dragOffsetX  = 0;
@@ -69,8 +69,8 @@
                 this.screenWidth  = project.canvas.width;
                 this.screenHeight = project.canvas.height;
                 this.regionSize   = 35 * this.zoom;
-                this.cameraX      = (this.screenWidth/2) + (this.tileWidth / 2);
-                this.cameraY      = (this.screenHeight/2) + (this.tileHeight / 2);
+                this.cameraX      = (this.screenWidth/2);// + (this.tileWidth / 2);
+                this.cameraY      = (this.screenHeight/2) - (this.tileHeight * 7.5);
 
                 this.addEventListeners();
 
@@ -106,10 +106,10 @@
                 this.tileWidth  = 64 * (1 / this.zoom);
                 this.tileHeight = this.tileWidth / 2;
                 this.regionSize = Math.ceil(35 * this.zoom);
-                this.cameraX    = (this.screenWidth/2) + (this.tileWidth / 2);
-                this.cameraY    = (this.screenHeight/2) + (this.tileHeight / 2);
+                //this.cameraX    = (this.screenWidth/2) + ((this.tileWidth / 2) / this.zoom );
+                //this.cameraY    = (this.screenHeight/2) - (this.tileHeight / 2);
 
-                console.log(this.cameraY, centerY);
+                console.log(this.zoom, this.cameraY, centerY);
 
                 this.draw();
             };
@@ -151,6 +151,7 @@
                 var clickEvent, mouseDownEvent, mouseMoveEvent, mouseUpEvent, mouseOutEvent, mouseWheelEvent;
 
                 mouseWheelEvent = element.addEventListener("wheel", function(target) {
+                    target.preventDefault();
                     if (target.wheelDelta < -2) {
                         self.zoomOut(Math.min(self.zoom + 0.1, 2), target.x, target.y);
                     } else if (target.wheelDelta > 2) {
@@ -210,9 +211,11 @@
             Map.prototype.clicked = function(screenX, screenY) {
                 screenX -= this.cameraX;
                 screenY -= this.cameraY;
-                var mapX = Math.floor((screenX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2);
-                var mapY = Math.floor((screenY / (this.tileHeight / 2) - (screenX / (this.tileWidth / 2))) / 2);
-                //console.log("Clicked map on tile:", mapX, mapY);
+                var halfTileWidth = (this.tileWidth / 2);
+                var halfTileHeight = (this.tileHeight / 2);
+                var mapX = Math.floor((screenX / halfTileWidth + screenY / halfTileHeight) / 2);
+                var mapY = Math.floor((screenY / halfTileHeight - (screenX / halfTileWidth)) / 2);
+                console.log("Clicked map on tile:", mapX, mapY);
 
                 return {
                     x: mapX,
@@ -259,8 +262,8 @@
                     0,
                     tile.attr.image.width,
                     tile.attr.image.height,
-                    screenX-(tile.attr.image.width / 2),
-                    screenY-(tile.attr.image.height - 48),
+                    screenX - (this.tileWidth / 2),
+                    screenY - (52 * (1 / this.zoom)),
                     tile.attr.image.width * (1 / this.zoom),
                     tile.attr.image.height * (1 / this.zoom)
                 );
