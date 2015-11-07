@@ -1,5 +1,11 @@
 <html>
     <head>
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+        </style>
     </head>
     <body>
         <canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
@@ -68,11 +74,10 @@
                 this.dragOffsetY  = 0;
                 this.screenWidth  = project.canvas.width;
                 this.screenHeight = project.canvas.height;
-                this.regionSize   = 35 * this.zoom;
+                this.regionSize   = 19 * this.zoom;
                 this.cameraX      = (this.screenWidth/2);// + (this.tileWidth / 2);
                 this.cameraY      = (this.screenHeight/2);// - (this.tileHeight * 7.5);
-                //this.startCameraY = this.cameraY;
-
+                
                 this.addEventListeners();
 
                 if (this.tiles.length === 0) {
@@ -84,7 +89,7 @@
  
             Map.prototype.zoomOut = function(end, centerX, centerY) {
                 if (this.zoom < end) {
-                    this.setZoom(this.zoom + 0.1, centerX, centerY);
+                    this.setZoom(this.zoom + 0.05, centerX, centerY);
                     var self = this;
                     this.project.queue["zoomUpdate"] = function() {
                         self.zoomOut(end, centerX, centerY);
@@ -94,7 +99,7 @@
  
             Map.prototype.zoomIn = function(end, centerX, centerY) {
                 if (this.zoom > end) {
-                    this.setZoom(this.zoom - 0.1, centerX, centerY);
+                    this.setZoom(this.zoom - 0.05, centerX, centerY);
                     var self = this;
                     this.project.queue["zoomUpdate"] = function() {
                         self.zoomIn(end, centerX, centerY);
@@ -103,33 +108,20 @@
             };
 
             Map.prototype.setZoom = function(zoom, centerX, centerY) {
+                centerX = (this.screenWidth / 2);
+                centerY = (this.screenHeight / 2);
+
+                var newImageX     = ((centerX - this.cameraX) * (zoom / this.zoom)),
+                    newImageY     = ((centerY - this.cameraY) * (zoom / this.zoom));
+
                 this.zoom       = zoom;
-                this.tileWidth  = 64 * (1 / this.zoom);
+                this.tileWidth  = (64 * (1 / this.zoom)) ;
                 this.tileHeight = this.tileWidth / 2;
-                this.regionSize = Math.ceil(35 * this.zoom);
-                //this.cameraX    = (this.screenWidth/2) + ((this.tileWidth / 2) / this.zoom );
-                //this.cameraY    = this.cameraY + (this.zoom / 2);
+                this.cameraX    = this.cameraX + (newImageX - ((this.screenWidth / 2) - this.cameraX));
+                this.cameraY    = this.cameraY + (newImageY - ((this.screenHeight / 2) - this.cameraY));
+                console.log(this.cameraY, this.zoom);
 
-                this.cameraY = (this.cameraY - (this.screenHeight/2)) + this.cameraY;
-
-                //this.cameraY = this.startCameraY * (Math.pow(1.11,Math.round((this.zoom - 1) * 10)));
-                //this.cameraY = this.cameraY * (Math.pow(1.1,Math.round((this.zoom - 1) * 10)));
-
-                // var baseY = Math.max(this.cameraY, Math.round(this.cameraY / (Math.pow(1.1,Math.round((this.zoom - 1) * 10)))));
-
-                // console.log(baseY, this.cameraY);
-
-                // this.cameraY = baseY * (Math.pow(1.1,Math.round((this.zoom - 1) * 10)));
-
-                var startY = 60;
-
-                //this.cameraY = startY + (Math.round((this.zoom - 1) * 10) * 12);
-
-                //this.cameraY = 300 - ((300 - startY) / (Math.pow(1.1,Math.round((this.zoom - 1) * 10))));
-
-                //console.log(this.cameraX, this.cameraY, baseY);//, 300 - ((300 - startY) / (Math.pow(1.1,Math.round((this.zoom - 1) * 10)))));// (Math.pow(1.1,Math.round((this.zoom - 1) * 10))));//, this.startCameraY * (Math.pow(1.1,Math.round((this.zoom - 1) * 20))));//centerY);
-
-                this.draw();
+                 this.draw();
             };
 
             Map.prototype.sortMap = function (a, b) {
@@ -158,7 +150,7 @@
                 }
 
                 //this.drawViewer();
-                this.drawCrosshair();
+                //this.drawCrosshair();
             };
 
             Map.prototype.addEventListeners = function() {
@@ -171,9 +163,9 @@
                 mouseWheelEvent = element.addEventListener("wheel", function(target) {
                     target.preventDefault();
                     if (target.wheelDelta < -2) {
-                        self.zoomOut(Math.min(self.zoom + 0.1, 2), target.x, target.y);
+                        self.zoomOut(Math.min(self.zoom + 0.05, 2), target.x, target.y);
                     } else if (target.wheelDelta > 2) {
-                        self.zoomIn(Math.max(self.zoom - 0.1, 1), target.x, target.y);
+                        self.zoomIn(Math.max(self.zoom - 0.05, 1), target.x, target.y);
                     }
                 }, false);
 
@@ -232,7 +224,7 @@
                 var halfTileWidth = (this.tileWidth / 2);
                 var halfTileHeight = (this.tileHeight / 2);
                 var mapX = Math.floor((screenX / halfTileWidth + screenY / halfTileHeight) / 2);
-                var mapY = Math.floor((screenY / halfTileHeight - (screenX / halfTileWidth)) / 2);
+                var mapY = Math.floor((screenY / halfTileHeight - screenX / halfTileWidth) / 2);
                 console.log("Clicked map on tile:", mapX, mapY);
 
                 return {
@@ -285,6 +277,22 @@
                     tile.attr.image.width * (1 / this.zoom),
                     tile.attr.image.height * (1 / this.zoom)
                 );
+
+                // this.context.beginPath();
+                // this.context.moveTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+                // this.context.lineTo(screenX, screenY);
+                // this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+                // this.context.lineTo(screenX, screenY);
+                // this.context.closePath();
+                // this.context.stroke();
+
+                // this.context.beginPath();
+                // this.context.moveTo(screenX + (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+                // this.context.lineTo(screenX, screenY + this.tileHeight);
+                // this.context.lineTo(screenX - (this.tileWidth / 2), screenY + (this.tileHeight / 2));
+                // this.context.lineTo(screenX, screenY + this.tileHeight);
+                // this.context.closePath();
+                // this.context.stroke();
 
                 // this.context.font = "8px Arial";
                 // this.context.fillStyle = "#000";
@@ -344,9 +352,10 @@
             Map.prototype.createStartZone = function() {
                 var startZoneCoords = [];
                 var tile, image;
-                for (var i = 0; i <= 5; i++) {
-                    for (var j = 0; j <= 5; j++) {
+                for (var i = 0; i < 5; i++) {
+                    for (var j = 0; j < 5; j++) {
                         tile = this.tileHash[(i+5)+":"+(j+5)];
+                        console.log((i+5)+":"+(j+5), tile);
                         image = new Image();
                         image.src = 'img/basic1.png';
                         if (i == 2 && j == 2) {
@@ -390,7 +399,7 @@
                 // this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
                 // this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
                 this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-                // this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
+                this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
                 // this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
                 // this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
                 // this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
