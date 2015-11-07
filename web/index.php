@@ -74,7 +74,7 @@
                 this.dragOffsetY  = 0;
                 this.screenWidth  = project.canvas.width;
                 this.screenHeight = project.canvas.height;
-                this.regionSize   = 19 * this.zoom;
+                this.regionSize   = 35 * this.zoom;
                 this.cameraX      = (this.screenWidth/2);// + (this.tileWidth / 2);
                 this.cameraY      = (this.screenHeight/2);// - (this.tileHeight * 7.5);
                 
@@ -108,17 +108,17 @@
             };
 
             Map.prototype.setZoom = function(zoom, centerX, centerY) {
-                centerX = (this.screenWidth / 2);
-                centerY = (this.screenHeight / 2);
+                //centerX = (this.screenWidth / 2);
+                //centerY = (this.screenHeight / 2);
 
-                var newImageX     = ((centerX - this.cameraX) * (zoom / this.zoom)),
-                    newImageY     = ((centerY - this.cameraY) * (zoom / this.zoom));
+                var newImageX = ((centerX - this.cameraX) * (zoom / this.zoom)),
+                    newImageY = ((centerY - this.cameraY) * (zoom / this.zoom));
 
                 this.zoom       = zoom;
                 this.tileWidth  = (64 * (1 / this.zoom)) ;
                 this.tileHeight = this.tileWidth / 2;
-                this.cameraX    = this.cameraX + (newImageX - ((this.screenWidth / 2) - this.cameraX));
-                this.cameraY    = this.cameraY + (newImageY - ((this.screenHeight / 2) - this.cameraY));
+                this.cameraX    = this.cameraX + (newImageX - (centerX - this.cameraX));
+                this.cameraY    = this.cameraY + (newImageY - (centerY - this.cameraY));
                 console.log(this.cameraY, this.zoom);
 
                  this.draw();
@@ -399,11 +399,11 @@
                 // this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
                 // this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
                 this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-                this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
+                // this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
                 // this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
                 // this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
                 // this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
-
+                
                 this.tiles = this.tiles.sort(this.sortMap);
 
                 var count = 0;
@@ -418,6 +418,12 @@
                 //console.log("Quadrant IS", regionQuadrant);
 
                 // Unload regions that should be out of the viewport
+
+                // if (defaultX === 0 &&
+                //     defaultY === 0) {
+                //     var self = this;
+                //     setTimeout(function() { self.createStartZone(); self.draw(); }, 100);
+                // }
             };
 
             Map.prototype.regionQuadrant = function(x, y) {
@@ -549,6 +555,7 @@
             };
             imageSrcs.push('img/house1.png');
             imageSrcs.push('img/path_ew.png');
+            imageSrcs.push('img/basic1.png');
 
             var myProject = new Project("myCanvas");
             preloadImages(imageSrcs, function() {
