@@ -82,6 +82,13 @@
 
                 if (this.tiles.length === 0) {
                     console.log(this);
+                    var self = this;
+                    // this.project.queue["loadRegions"] = function() {
+                    //     self.loadRegions(0, 0);
+                    // };
+                    // this.project.queue["createStartZone"] = function() {
+                    //     self.createStartZone();
+                    // };
                     this.loadRegions(0, 0);
                     this.createStartZone();
                 }
@@ -121,7 +128,10 @@
                 this.cameraY    = this.cameraY + (newImageY - (centerY - this.cameraY));
                 console.log(this.cameraY, this.zoom);
 
-                 this.draw();
+                var self = this;
+                this.project.queue["draw"] = function() {
+                    self.draw();
+                };
             };
 
             Map.prototype.sortMap = function (a, b) {
