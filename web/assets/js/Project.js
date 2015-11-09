@@ -12,6 +12,12 @@ var Project = function(canvasId) {
     this.heart;
     this.startHeart();
     this.map = new Map(this);
+
+    var map = this.map;
+    this.appendToQueue("createStartZone", function() {
+        map.createStartZone();
+        map.draw();
+    });
 };
 
 Project.prototype.queue = function() {
@@ -39,14 +45,16 @@ Project.prototype.startHeart = function() {
 Project.prototype.proccessQueue = function() {
     //console.log("Beat", this);
     var callback;
-    for (var i in this.queue) {
-        callback = this.queue[i][1];
-        //console.log("Proccessing", this.queue[i][0]);
+    var queueToProcess = this.queue.slice();
+    this.queue = [];
+    for (var i in queueToProcess) {
+        callback = queueToProcess[i][1];
+        if (queueToProcess[i][0] != "draw") {console.log("Proccessing", queueToProcess[i][0]);};
         if (typeof callback == "function") {
             callback();
         }
+        if (queueToProcess[i][0] != "draw") {console.log("Finished proccessing", queueToProcess[i][0]);};
     }
-    this.queue = [];
 
     if (typeof requestAnimationFrame == "function") {
         var self = this;

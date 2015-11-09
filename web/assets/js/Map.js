@@ -24,12 +24,6 @@ var Map = function(project) {
         this.project.appendToQueue("initLoadRegions", function() {
             self.loadRegions(0, 0);
         });
-        setTimeout(function() {
-            self.project.appendToQueue("createStartZone", function() {
-                self.createStartZone();
-                self.draw();
-            });
-        }, 250);
     }
 };
 
@@ -380,24 +374,26 @@ Map.prototype.loadRegions = function(defaultX, defaultY) {
     // this.destroyRegion(regionCoords.x+2, regionCoords.y+1);
     // //this.destroyRegion(regionCoords.x+2, regionCoords.y+2);
     
-    this.generateRegion(regionCoords.x-1, regionCoords.y-1); // 0,0
-    this.generateRegion(regionCoords.x-1, regionCoords.y);   // 0,1
-    this.generateRegion(regionCoords.x-1, regionCoords.y+1); // 0,2
-    this.generateRegion(regionCoords.x, regionCoords.y-1);   // 1,0
-    this.generateRegion(regionCoords.x, regionCoords.y);     // 1,1
-    this.generateRegion(regionCoords.x, regionCoords.y+1);   // 1,2
-    this.generateRegion(regionCoords.x+1, regionCoords.y-1); // 2,0
-    this.generateRegion(regionCoords.x+1, regionCoords.y);   // 2,1
-    this.generateRegion(regionCoords.x+1, regionCoords.y+1); // 2,2
-    
-    this.tiles = this.tiles.sort(this.sortMap);
+    var regionLoaded = false;
 
-    var count = 0;
-    for (var i in this.tiles) {
-        count++;
+    if (this.generateRegion(regionCoords.x-1, regionCoords.y-1) == true) { regionLoaded = true; } // 0,0
+    if (this.generateRegion(regionCoords.x-1, regionCoords.y)   == true) { regionLoaded = true; } // 0,1
+    if (this.generateRegion(regionCoords.x-1, regionCoords.y+1) == true) { regionLoaded = true; } // 0,2
+    if (this.generateRegion(regionCoords.x,   regionCoords.y-1) == true) { regionLoaded = true; } // 1,0
+    if (this.generateRegion(regionCoords.x,   regionCoords.y)   == true) { regionLoaded = true; } // 1,1
+    if (this.generateRegion(regionCoords.x,   regionCoords.y+1) == true) { regionLoaded = true; } // 1,2
+    if (this.generateRegion(regionCoords.x+1, regionCoords.y-1) == true) { regionLoaded = true; } // 2,0
+    if (this.generateRegion(regionCoords.x+1, regionCoords.y)   == true) { regionLoaded = true; } // 2,1
+    if (this.generateRegion(regionCoords.x+1, regionCoords.y+1) == true) { regionLoaded = true; } // 2,2
+
+    if (regionLoaded === true) {
+        var self = this;
+        this.project.appendToQueue("sort", function() {
+            self.tiles = self.tiles.sort(self.sortMap);
+        });
     }
 
-    //console.log("Tiles in memory",count);
+    console.log("Tiles in memory",this.tiles.length);
 
     var regionQuadrant = this.regionQuadrant(clickedTileCoords.x, clickedTileCoords.y);
 
@@ -405,11 +401,12 @@ Map.prototype.loadRegions = function(defaultX, defaultY) {
 
     // Unload regions that should be out of the viewport
 
-    // if (defaultX === 0 &&
-    //     defaultY === 0) {
-    //     var self = this;
-    //     setTimeout(function() { self.createStartZone(); self.draw(); }, 100);
-    // }
+    if (defaultX === 0 &&
+        defaultY === 0) {
+        // var self = this;
+        // setTimeout(function() { self.createStartZone(); self.draw(); }, 100);
+        //console.log("Finished loadRegions");
+    }
 };
 
 Map.prototype.regionQuadrant = function(x, y) {
@@ -450,7 +447,7 @@ Map.prototype.destroyRegion = function(regionX, regionY) {
 Map.prototype.generateRegion = function(regionX, regionY) {
     var regionExists = this.regionExists(regionX, regionY);
     if (regionExists !== false) {
-        return;
+        return false;
     }
 
     var maxX = this.regionSize * (regionX + 1);
@@ -471,6 +468,8 @@ Map.prototype.generateRegion = function(regionX, regionY) {
             this.addTile(tile);
         }
     }
+
+    return true;
 };
 
 Map.prototype.pickRandomNeighbor = function(obj) {

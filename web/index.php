@@ -6,9 +6,6 @@
                 padding: 0;
             }
         </style>
-    </head>
-    <body>
-        <canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
         <script type="text/javascript" src="assets/js/Utils.js"></script>
         <script type="text/javascript" src="assets/js/Project.js"></script>
         <script type="text/javascript" src="assets/js/Map.js"></script>
@@ -34,5 +31,8 @@
                 });
             }
         </script>
+    </head>
+    <body>
+        <canvas id="myCanvas" width="800" height="600" style="border:1px solid #000000;"></canvas>
     </body>
 </html>
